@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Face Direction Detection</title>
+<style>
+body {
+    font-family: helvetica, arial, sans-serif;
+    margin: 0;
+    color: #3D3D3D;
+}
+
+h1 {
+    font-style: italic;
+    color: #FF6F00;
+}
+
+video {
+    display: block;
+    margin: 0 auto; /* Center the video horizontally */
+    transform: scaleX(-1); /* Flip the video horizontally */
+}
+
+section {
+    opacity: 1;
+    transition: opacity 500ms ease-in-out;
+}
+
+.removed {
+    display: none;
+}
+
+.invisible {
+    opacity: 0.2;
+}
+
+.camView {
+    position: relative;
+    width: 100%;
+    cursor: pointer;
+}
+
+.camView p {
+    position: absolute;
+    padding: 5px;
+    background-color: rgba(255, 111, 0, 0.85);
+    color: #FFF;
+    border: 1px dashed rgba(255, 255, 255, 0.7);
+    z-index: 2;
+    font-size: 12px;
+}
+
+.highlighter {
+    background: rgba(0, 255, 0, 0.25);
+    border: 1px dashed #fff;
+    z-index: 1;
+    position: absolute;
+}
+</style>
+</head>
+<body>
+<video id="video" autoplay></video>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-detection"></script>
+<script>
+async function detectAndAlertDirection(detector, videoElement) {
+  const faces = await detector.estimateFaces(videoElement);
+  
+  faces.forEach(face => {
+    const direction = determineDirection(face.keypoints);
+    if (direction !== "Center") {
+      alert(`Person is looking ${direction}`);
+    }
+  });
+}
+
+function determineDirection(keypoints) {
+    const nose = keypoints.find(keypoint => keypoint.name === 'noseTip');
+    const leftEye = keypoints.find(keypoint => keypoint.name === 'leftEye');
+    const rightEye = keypoints.find(keypoint => keypoint.name === 'rightEye');
+    const mouthCenter = keypoints.find(keypoint => keypoint.name === 'mouthCenter');
+
+    // Calculate the vectors between the eyes and the nose
+    const leftEyeVector = { x: leftEye.x - nose.x, y: leftEye.y - nose.y };
+    const rightEyeVector = { x: rightEye.x - nose.x, y: rightEye.y - nose.y };
+
+    // Calculate the average angle between the vectors
+    const angle = (Math.atan2(rightEyeVector.y, rightEyeVector.x) + Math.atan2(leftEyeVector.y, leftEyeVector.x)) / 2;
+    const angleDegrees = angle * (180 / Math.PI);
+
+    // Normalize angle to be within -180 to 180 degrees range
+    let normalizedAngleDegrees = angleDegrees;
+    if (normalizedAngleDegrees < -180) {
+        normalizedAngleDegrees += 360;
+    } else if (normalizedAngleDegrees > 180) {
+        normalizedAngleDegrees -= 360;
+    }
+
+    // Determine direction based on the angle
+    if (normalizedAngleDegrees > -22.5 && normalizedAngleDegrees <= 22.5) {
+        return "right";
+    } else if (normalizedAngleDegrees > 22.5 && normalizedAngleDegrees <= 67.5) {
+        return "upright";
+    } else if (normalizedAngleDegrees > 67.5 && normalizedAngleDegrees <= 112.5) {
+        return "up";
+    } else if (normalizedAngleDegrees > 112.5 && normalizedAngleDegrees <= 157.5) {
+        return "upleft";
+    } else if (normalizedAngleDegrees > 157.5 || normalizedAngleDegrees <= -157.5) {
+        return "left";
+    } else if (normalizedAngleDegrees > -157.5 && normalizedAngleDegrees <= -112.5) {
+        return "downleft";
+    } else if (normalizedAngleDegrees > -112.5 && normalizedAngleDegrees <= -67.5) {
+        return "down";
+    } else if (normalizedAngleDegrees > -67.5 && normalizedAngleDegrees <= -22.5) {
+        return "downright";
+    } else {
+        return "Center";
+    }
+}
+
+
+
+// Initialize the video stream and start face detection
+async function init() {
+  const videoElement = document.getElementById('video');
+  const model = faceDetection.SupportedModels.MediaPipeFaceDetector;
+  const detectorConfig = {
+    runtime: 'mediapipe',
+    solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_detection',
+  };
+  const detector = await faceDetection.createDetector(model, detectorConfig);
+  
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      videoElement.srcObject = stream;
+      videoElement.onloadedmetadata = () => {
+        videoElement.play();
+        setInterval(async () => {
+          await detectAndAlertDirection(detector, videoElement);
+        }, 1000); // Adjust the interval as needed
+      };
+    })
+    .catch(error => {
+      console.error('Error accessing camera:', error);
+    });
+}
+
+// Call the init function to start the application
+init();
+</script>
+</body>
+</html>
