@@ -19,7 +19,7 @@ This README provides concise instructions for running Tensorflow.js
 
 1. **Running on browser:** just run the html file inside the folders on your browser.
 
-2. **Testing** Try to move your face towards the camera/webcam even an object to detect it
+2. **Testing** Try to move your face towards the camera/webcam try to look left or rigt
 3. ### You are welcome to modify and add updates on the project. Happy Coding!
 
 ---
@@ -28,7 +28,7 @@ This README provides concise instructions for running Tensorflow.js
 
 - Might not work on other browsers
 - This is working on chrome browsers perhaps
-- **-Tcker** This might need to be modified a little since I want it to detect if the user is looking left, right, up, or down.
+- **-Tcker** This might need to be modified more, because when facing upwards and downwards does not detect a little?, Still a major issue.
 
 # Project Notice
 
